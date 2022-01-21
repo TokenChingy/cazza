@@ -38,9 +38,9 @@ app.use(express.urlencoded({ extended: true }));
 
 app.post("/api/submissions", async function (request, response) {
   for await (const person of request.body) {
-    const emailExists = db.chain.get("submissions").find(person).value();
+    const personExists = db.chain.get("submissions").find(person).value();
 
-    if (emailExists === undefined) {
+    if (personExists === undefined) {
       db.chain.get("submissions").push(person).value();
       await db.write();
     }
