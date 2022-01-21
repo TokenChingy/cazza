@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.4.4/css/pico.min.css"
+      integrity="sha256-PDgELTEFYBFlv0oC3+6z1biZkGaVWobralPfxX88r50="
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"
+      integrity="sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k="
+      crossorigin="anonymous"
+    ></script>
+    <title>Cazza</title>
+  </head>
+  <body>
+    <main class="container">
+      <section>
+        <h1>Cazza</h1>
+      </section>
+
+      <article>
+        <section>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email Address</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody id="staffList"></tbody>
+          </table>
+        </section>
+
+        <form id="addStaff">
+          <div class="grid">
+            <div>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                placeholder="First Name"
+                required="true"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                placeholder="Last Name"
+                required="true"
+              />
+            </div>
+            <div>
+              <input
+                type="email"
+                id="emailAddress"
+                name="emailAddress"
+                placeholder="Email Address"
+                required="true"
+              />
+            </div>
+            <div>
+              <button type="submit">Add Staff</button>
+            </div>
+          </div>
+        </form>
+      </article>
+
+      <article>
+        <form id="submitStaff">
+          <input
+            type="text"
+            id="organisationName"
+            name="organisationName"
+            placeholder="Organisation Name"
+            required="true"
+          />
+          <input
+            type="text"
+            pattern="[0-9]*"
+            id="postCode"
+            name="postCode"
+            placeholder="Post Code"
+            required="true"
+          />
+          <button type="submit">Submit</button>
+        </form>
+      </article>
+    </main>
+
+    <script type="text/javascript">
+      let staff = [];
+
+      function renderStaff() {
+        const staffListElement = document.getElementById("staffList");
+
+        let htmlString = "";
+
+        staff.forEach((member) => {
+          htmlString += `
+            <tr>
+              <td scope="row">${member.firstName}</td>
+              <td scope="row">${member.lastName}</td>
+              <td scope="row">${member.emailAddress}</td>
+              <td scope="row">
+                <button class="contrast outline" onclick="removeStaffMember('${member.firstName.trim()}', '${member.lastName.trim()}', '${member.emailAddress.trim()}')" style="margin-bottom: 0;">Remove</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        if (htmlString === "") {
+          htmlString = `
+            <tr>
+              <td scope="rowgroup" colspan="4" style="text-align: center; padding: var(--spacing)">Please add some staff members</td>
+            </tr>
+          `;
+        }
+
+        staffListElement.innerHTML = htmlString;
+      }
+
+      function removeStaffMember(firstName, lastName, emailAddress) {
+        staff = _.reject(staff, { firstName, lastName, emailAddress });
+        renderStaff();
+      }
+
+      function resetStaff() {
+        staff = [];
+        renderStaff();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        renderStaff();
+      });
+
+      document
+        .getElementById("addStaff")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+
+          const member = Object.fromEntries(new FormData(event.target));
+          const staffExists = _.find(staff, member);
+
+          if (staffExists === undefined) {
+            staff.push(member);
+            event.target.reset();
+          } else {
+            alert("Staff member already added.");
+          }
+
+          renderStaff();
+        });
+
+      document
+        .getElementById("submitStaff")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const details = Object.fromEntries(new FormData(event.target));
+
+          if (staff.length > 0) {
+            const requestObject = staff.map((member) => {
+              return {
+                firstName: member.firstName,
+                lastName: member.lastName,
+                emailAddress: member.emailAddress,
+                organisationName: details.organisationName,
+                postCode: details.postCode,
+              };
+            });
+
+            await fetch("/api/submissions", {
+              method: "POST",
+              mode: "cors",
+              cache: "no-cache",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              redirect: "follow",
+              referrerPolicy: "no-referrer",
+              body: JSON.stringify(requestObject),
+            });
+
+            event.target.reset();
+            resetStaff();
+          } else {
+            alert("Please add at least one staff member.");
+          }
+        });
+    </script>
+  </body>
+</html>
